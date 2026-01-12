@@ -237,6 +237,33 @@ async function run() {
       res.send(result);
     });
 
+    // Genre Creation (Admin Only)
+    // ======================
+    app.post("/genres", async (req, res) => {
+      const { name, description } = req.body;
+      const newGenre = {
+        name,
+        description: description || "",
+        createdAt: new Date(),
+      };
+      const result = await genresCollection.insertOne(newGenre);
+      res.send(result);
+    });
+
+    // get all genres data
+    app.get("/genres", async (req, res) => {
+      const result = await genresCollection.find().toArray();
+      res.send(result);
+    });
+
+    // delete my genres
+    app.delete("/genres/:id", async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) };
+      const result = await genresCollection.deleteOne(query);
+      res.send(result);
+    });
+
     // Send a ping to confirm a successful connection
     await client.db("admin").command({ ping: 1 });
     console.log(
