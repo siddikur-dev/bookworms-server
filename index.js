@@ -65,13 +65,13 @@ async function run() {
       res.send(result);
     });
 
-    // get all issues data
+    // get all user data
     app.get("/users", async (req, res) => {
       const result = await usersCollection.find().toArray();
       res.send(result);
     });
 
-    // get single issues data by id
+    // get single user data by id
     app.get("/users/:id", async (req, res) => {
       const id = req.params.id;
       const query = { _id: new ObjectId(id) };
@@ -174,6 +174,8 @@ async function run() {
     // Books Management API
     // ======================
     // POST: /books - Create a new book
+
+    // post single books data
     app.post("/books", async (req, res) => {
       const { title, author, genre, description, coverImage, totalPages } =
         req.body;
@@ -192,6 +194,20 @@ async function run() {
         averageRating: 0,
         totalReviews: 0,
       });
+      res.send(result);
+    });
+
+    // get all books data
+    app.get("/books", async (req, res) => {
+      const result = await booksCollection.find().toArray();
+      res.send(result);
+    });
+
+    // get single books data by id
+    app.get("/books/:id", async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) };
+      const result = await booksCollection.findOne(query);
       res.send(result);
     });
 
