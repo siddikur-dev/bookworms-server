@@ -33,6 +33,9 @@ async function run() {
     // Connect the client to the server	(optional starting in v4.7)
     // await client.connect();
 
+    // All User API
+    // ======================
+
     //insert user data
     app.post("/users", async (req, res) => {
       const { name, email, photo } = req.body;
@@ -76,6 +79,7 @@ async function run() {
       res.send(result);
     });
 
+    // update user role by id
     app.patch("/users/:id", async (req, res) => {
       try {
         const id = req.params.id;
@@ -164,6 +168,30 @@ async function run() {
       const id = req.params.id;
       const query = { _id: new ObjectId(id) };
       const result = await usersCollection.deleteOne(query);
+      res.send(result);
+    });
+
+    // Books Management API
+    // ======================
+    // POST: /books - Create a new book
+    app.post("/books", async (req, res) => {
+      const { title, author, genre, description, coverImage, totalPages } =
+        req.body;
+
+      const bookData = {
+        title,
+        author,
+        genre,
+        description,
+        coverImage,
+        totalPages,
+      };
+      const result = await booksCollection.insertOne({
+        ...bookData,
+        createdAt: new Date(),
+        averageRating: 0,
+        totalReviews: 0,
+      });
       res.send(result);
     });
 
