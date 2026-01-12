@@ -163,14 +163,6 @@ async function run() {
       }
     });
 
-    // delete my added issues
-    app.delete("/my-issues/:id", async (req, res) => {
-      const id = req.params.id;
-      const query = { _id: new ObjectId(id) };
-      const result = await usersCollection.deleteOne(query);
-      res.send(result);
-    });
-
     // Books Management API
     // ======================
     // POST: /books - Create a new book
@@ -208,6 +200,40 @@ async function run() {
       const id = req.params.id;
       const query = { _id: new ObjectId(id) };
       const result = await booksCollection.findOne(query);
+      res.send(result);
+    });
+
+    // update books role by id
+    app.patch("/books/:id", async (req, res) => {
+      try {
+        const id = req.params.id;
+        const updatedBooksInfo = req.body;
+
+        const filter = { _id: new ObjectId(id) };
+        const updateDoc = {
+          $set: {
+            title: updatedBooksInfo.title,
+            author: updatedBooksInfo.author,
+            genre: updatedBooksInfo.genre,
+            description: updatedBooksInfo.description,
+            coverImage: updatedBooksInfo.coverImage,
+            totalPages: updatedBooksInfo.totalPages,
+          },
+        };
+
+        const result = await booksCollection.updateOne(filter, updateDoc);
+        res.send(result);
+      } catch (error) {
+        console.error(error);
+        res.status(500).send({ message: "Failed to update issue" });
+      }
+    });
+
+    // delete my added issues
+    app.delete("/books/:id", async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) };
+      const result = await booksCollection.deleteOne(query);
       res.send(result);
     });
 
