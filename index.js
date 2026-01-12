@@ -3,15 +3,14 @@ const app = express();
 const cors = require("cors");
 require("dotenv").config();
 // var admin = require("firebase-admin");
-const port = process.env.PORT || 3000;
+const port = process.env.PORT || 5000;
 // middleware
 app.use(cors());
 app.use(express.json());
 
-
 // MongoDB Server Connection
 const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
-const uri =process.env.MONGODB_URI;
+const uri = process.env.MONGODB_URI;
 
 // Create a MongoClient with a MongoClientOptions object to set the Stable API version
 const client = new MongoClient(uri, {
@@ -24,37 +23,85 @@ const client = new MongoClient(uri, {
 
 async function run() {
   try {
-    const issuesCollection = client.db("issuesDB").collection("all-issues");
-    const contributionCollection = client
-      .db("issuesDB")
-      .collection("all-contributions");
+    const BookWormsDB = client.db("BookWormsDB");
+    const usersCollection = BookWormsDB.collection("users");
+    const booksCollection = BookWormsDB.collection("books");
+    const libraryCollection = BookWormsDB.collection("library");
+    const reviewsCollection = BookWormsDB.collection("reviews");
+    const genresCollection = BookWormsDB.collection("genres");
+    const tutorialsCollection = BookWormsDB.collection("tutorials");
     // Connect the client to the server	(optional starting in v4.7)
     // await client.connect();
 
-    //insert issue data
-    app.post("/all-issues", async (req, res) => {
-      const issue = req.body;
-      const result = await issuesCollection.insertOne(issue);
+    //insert user data
+    app.post("/users", async (req, res) => {
+      const { name, email, photo } = req.body;
+
+      if (!email) {
+        return res.status(400).send({ message: "Email is required" });
+      }
+
+      const existingUser = await usersCollection.findOne({ email });
+
+      if (existingUser) {
+        return res.send({
+          message: "User already exists",
+          insertedId: null,
+        });
+      }
+
+      const user = {
+        name,
+        email,
+        photo,
+        role: "user", // default
+        createdAt: new Date(),
+      };
+
+      const result = await usersCollection.insertOne(user);
       res.send(result);
     });
 
     // get all issues data
-    app.get("/all-issues", async (req, res) => {
-      const result = await issuesCollection.find().toArray();
+    app.get("/users", async (req, res) => {
+      const result = await usersCollection.find().toArray();
       res.send(result);
     });
 
     // get single issues data by id
-    app.get("/all-issues/:id", async (req, res) => {
+    app.get("/users/:id", async (req, res) => {
       const id = req.params.id;
       const query = { _id: new ObjectId(id) };
-      const result = await issuesCollection.findOne(query);
+      const result = await usersCollection.findOne(query);
       res.send(result);
+    });
+
+    app.patch("/users/:id", async (req, res) => {
+      try {
+        const id = req.params.id;
+        const updatedUserRole = req.body;
+
+        const filter = { _id: new ObjectId(id) };
+        const updateDoc = {
+          $set: {
+            name: updatedUserRole.name,
+            email: updatedUserRole.email,
+            photo: updatedUserRole.photo,
+            role: updatedUserRole.role,
+          },
+        };
+
+        const result = await usersCollection.updateOne(filter, updateDoc);
+        res.send(result);
+      } catch (error) {
+        console.error(error);
+        res.status(500).send({ message: "Failed to update issue" });
+      }
     });
 
     // get recent complaints 6 card data
     app.get("/recent-issues", async (req, res) => {
-      const query = issuesCollection
+      const query = usersCollection
         .find()
         .sort({ date: "descending" })
         .limit(6);
@@ -66,7 +113,7 @@ async function run() {
     app.get("/issues/:id", async (req, res) => {
       const id = req.params.id;
       const query = { _id: new ObjectId(id) };
-      const result = await issuesCollection.findOne(query);
+      const result = await usersCollection.findOne(query);
       res.send(result);
     });
 
@@ -78,7 +125,7 @@ async function run() {
         if (email) {
           query.email = email; // email ফিল্ড যদি DB তে reporterEmail নামে থাকে
         }
-        const cursor = issuesCollection.find(query);
+        const cursor = usersCollection.find(query);
         const result = await cursor.toArray();
         res.send(result);
       } catch (error) {
@@ -104,7 +151,7 @@ async function run() {
           },
         };
 
-        const result = await issuesCollection.updateOne(filter, updateDoc);
+        const result = await usersCollection.updateOne(filter, updateDoc);
         res.send(result);
       } catch (error) {
         console.error(error);
@@ -116,11 +163,9 @@ async function run() {
     app.delete("/my-issues/:id", async (req, res) => {
       const id = req.params.id;
       const query = { _id: new ObjectId(id) };
-      const result = await issuesCollection.deleteOne(query);
+      const result = await usersCollection.deleteOne(query);
       res.send(result);
     });
-
-    
 
     // Send a ping to confirm a successful connection
     await client.db("admin").command({ ping: 1 });
