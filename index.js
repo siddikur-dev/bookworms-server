@@ -103,66 +103,6 @@ async function run() {
       }
     });
 
-    // get recent complaints 6 card data
-    app.get("/recent-issues", async (req, res) => {
-      const query = usersCollection
-        .find()
-        .sort({ date: "descending" })
-        .limit(6);
-      const result = await query.toArray();
-      res.send(result);
-    });
-
-    // get single card recent complaints
-    app.get("/issues/:id", async (req, res) => {
-      const id = req.params.id;
-      const query = { _id: new ObjectId(id) };
-      const result = await usersCollection.findOne(query);
-      res.send(result);
-    });
-
-    // get my added issues
-    app.get("/my-issues", async (req, res) => {
-      try {
-        const query = {};
-        const email = req.query.email;
-        if (email) {
-          query.email = email; // email ফিল্ড যদি DB তে reporterEmail নামে থাকে
-        }
-        const cursor = usersCollection.find(query);
-        const result = await cursor.toArray();
-        res.send(result);
-      } catch (error) {
-        console.error(error);
-        res.status(500).send({ message: "Failed to fetch issues" });
-      }
-    });
-
-    // update/put added my issues
-    app.put("/my-issues/:id", async (req, res) => {
-      try {
-        const id = req.params.id;
-        const updatedIssue = req.body;
-
-        const filter = { _id: new ObjectId(id) };
-        const updateDoc = {
-          $set: {
-            title: updatedIssue.title,
-            category: updatedIssue.category,
-            amount: updatedIssue.amount,
-            description: updatedIssue.description,
-            status: updatedIssue.status,
-          },
-        };
-
-        const result = await usersCollection.updateOne(filter, updateDoc);
-        res.send(result);
-      } catch (error) {
-        console.error(error);
-        res.status(500).send({ message: "Failed to update issue" });
-      }
-    });
-
     // Books Management API
     // ======================
     // POST: /books - Create a new book
@@ -229,7 +169,7 @@ async function run() {
       }
     });
 
-    // delete my added issues
+    // delete books by id
     app.delete("/books/:id", async (req, res) => {
       const id = req.params.id;
       const query = { _id: new ObjectId(id) };
@@ -264,10 +204,58 @@ async function run() {
       res.send(result);
     });
 
+    // User Library & Reading Tracker (User Role)
+    // ====================================
+
+    // my-library
+    app.post("/my-library", async (req, res) => {
+      const { bookId, title, author, coverImage, shelf, totalPages } = req.body;
+      const email = req.users.email;
+
+      //  Check if the book already exists in the user's library
+      const exists = await libraryCollection.findOne({
+        userEmail: email,
+        bookId: new ObjectId(bookData.bookId),
+      });
+
+      if (exists) {
+        return res
+          .status(400)
+          .send({ message: "This book is already in your library!" });
+      }
+
+      const bookData = {
+        bookId,
+        title,
+        author,
+        coverImage,
+        shelf,
+        totalPages,
+      };
+
+      const newLibraryEntry = {
+        ...bookData,
+        userEmail: email,
+        bookId: new ObjectId(bookData.bookId),
+        progressPages: 0,
+        addedAt: new Date(),
+      };
+      const result = await libraryCollection.insertOne(newLibraryEntry);
+      res.send(result);
+    });
+
+    // get my library data
+    app.get("/my-library", verifyToken, async (req, res) => {
+      const email = req.user.email;
+      const query = { userEmail: email };
+      const result = await libraryCollection.find(query).toArray();
+      res.send(result);
+    });
+
     // Send a ping to confirm a successful connection
     await client.db("admin").command({ ping: 1 });
     console.log(
-      "Pinged your deployment. You successfully connected to MongoDB!"
+      "Pinged your deployment. You successfully connected to MongoDB"
     );
   } finally {
     // Ensures that the client will close when you finish/error
