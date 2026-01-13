@@ -245,10 +245,40 @@ async function run() {
     });
 
     // get my library data
-    app.get("/my-library", verifyToken, async (req, res) => {
+    app.get("/my-library", async (req, res) => {
       const email = req.user.email;
       const query = { userEmail: email };
       const result = await libraryCollection.find(query).toArray();
+      res.send(result);
+    });
+
+    // Reviews Management API
+    // =========================
+
+    // POST: reviews -submit a new book review)
+    app.post("/reviews", async (req, res) => {
+      const { bookId, bookTitle, rating, reviewText } = req.body;
+
+      const reviewDoc = {
+        bookId: new ObjectId(bookId),
+        bookTitle,
+        userName: req.user.name,
+        userEmail: req.user.email,
+        userPhoto: req.user.photo,
+        rating: parseFloat(rating),
+        reviewText,
+        status: "pending", // initial status pending
+        createdAt: new Date(),
+      };
+
+      const result = await reviewsCollection.insertOne(reviewDoc);
+
+      res.send(result);
+    });
+
+    // get all reviews data
+    app.get("/reviews", async (req, res) => {
+      const result = await reviewsCollection.find().toArray();
       res.send(result);
     });
 
